@@ -52,4 +52,13 @@
     <Folder Include="Published\" />
   </ItemGroup>
 
+  <ItemGroup>
+    <None Update="App_Data\COLLEGE_MANAGEMENT_DB.mdf">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="App_Data\COLLEGE_MANAGEMENT_DB_log.ldf">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
 </Project>
