@@ -1,0 +1,166 @@
+﻿#nullable disable
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Rendering;
+using Microsoft.EntityFrameworkCore;
+using CollegeManagementLRM_NET5.Data;
+using CollegeManagementLRM_NET5.Models;
+using Microsoft.AspNetCore.SignalR;
+using CollegeManagementLRM_NET5.HubConfig;
+
+namespace CollegeManagementLRM_NET5.Controllers
+{
+    public class TeachersController : Controller
+    {
+        private readonly COLLEGE_MANAGEMENT_DBContext _context;
+        private readonly IHubContext<DashboardHub> _hub;
+        public TeachersController(COLLEGE_MANAGEMENT_DBContext context, IHubContext<DashboardHub> hub)
+        {
+            _hub = hub;
+            _context = context;
+        }
+
+        //GET: Teachers
+        public IActionResult Index()
+        {
+            return View();
+        }
+
+        //GET all Teachers
+        public async Task<JsonResult> GetAllTeachers()
+        {
+            List<Teacher> teachers = await _context.Teachers
+                    .ToListAsync();
+
+            return Json(teachers);
+        }
+        //GET teachers by id
+        public async Task<JsonResult> GetTeacherById(string id)
+        {
+            int teacherId = int.Parse(id);
+
+            var teacher = await _context.Teachers
+                .FirstOrDefaultAsync(m => m.IdTeacher == teacherId);
+
+            return Json(teacher);
+        }
+
+        //POST Insert Teacher
+        public async Task<string> InsertTeacherAsync([FromBody] Teacher teacher)
+        {
+
+            if (teacher != null)
+            {
+                var nameExist = await _context.Teachers.Where(x => x.Name == teacher.Name).ToListAsync();
+                //Verify if name already exists
+                if (nameExist.Count() == 0)
+                {
+                    if (teacher.Name != "")
+                    {
+                        _context.Add(teacher);
+                        await _context.SaveChangesAsync();
+
+                        //Atualiza Dashboard
+                        var TeachersCount = _context.Teachers.Count();
+                        var UpdateDashboard = _hub.Clients.All.SendAsync("getTeachersInfo", new
+                        {
+                            teachersQtd = TeachersCount
+                        });
+
+
+                        return "Sucess! Teacher Added Successfully";
+                    }
+                    else
+                    {
+                        return "Error! Teacher name cannot be empty";
+                    }
+                }
+                else
+                {
+                    return "Error! Teacher already exists. Try a diferent name";
+                }
+            }
+            else
+            {
+                return "Error! Teacher Not Inserted! Try Again";
+            }
+        }
+
+        //POST Delete Teacher
+        public async Task<string> DeleteTeacherAsync([FromBody] Teacher teacher)
+        {
+            if (teacher != null)
+            {
+
+                _context.Teachers.Attach(teacher);
+                _context.Teachers.Remove(teacher);
+                await _context.SaveChangesAsync();
+
+                //Atualiza Dashboard
+                var TeachersCount = _context.Teachers.Count();
+                var UpdateDashboard = _hub.Clients.All.SendAsync("getTeachersInfo", new
+                {
+                    teachersQtd = TeachersCount
+                });
+
+                return "Sucess! Teacher Removed Successfully";
+            }
+            else
+            {
+                return "Error! Teacher Not Deleted! Try Again";
+            }
+        }
+
+        //POST Update Teacher
+        public async Task<string> UpdateTeacherAsync([FromBody] Teacher teacher)
+        {
+            if (teacher != null)
+            {
+                //Verify if name already exists
+                var nameExist = await _context.Teachers.Where(x => x.Name == teacher.Name && x.IdTeacher != teacher.IdTeacher).ToListAsync();
+
+                if (nameExist.Count() == 0)
+                {
+                    if (teacher.Name != "")
+                    {
+                        Teacher TeacherObj = await _context.Teachers
+                    .Where(x => x.IdTeacher == teacher.IdTeacher).
+                    FirstOrDefaultAsync();
+
+                        TeacherObj.Name = teacher.Name;
+                        TeacherObj.IdTeacher = teacher.IdTeacher;
+                        TeacherObj.Birthday = teacher.Birthday;
+                        TeacherObj.Salary = teacher.Salary;
+                        await _context.SaveChangesAsync();
+
+                        //Atualiza Dashboard
+                        var TeachersCount = _context.Teachers.Count();
+                        var UpdateDashboard = _hub.Clients.All.SendAsync("getTeachersInfo", new
+                        {
+                            teachersQtd = TeachersCount
+                        });
+
+
+                        return "Sucess! Teacher Updated Successfully";
+                    }
+                    else
+                    {
+                        return "Error! Teacher name cannot be empty";
+
+                    }
+                }
+                else
+                {
+                    return "Error! Teacher already exists. Try a diferent name";
+                }
+            }
+            else
+            {
+                return "Error! Teacher Not Updated! Try Again";
+            }
+        }
+    }
+}
