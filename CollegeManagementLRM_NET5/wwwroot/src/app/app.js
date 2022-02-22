@@ -363,10 +363,12 @@ app.controller("CoursesCtrl", function ($scope, $http) {
 
             //INTERNAL ERROR
         }, function () {
+           
             $('#form-toast .toast-title').html("Error!")
-            $('#toast-sucess-body').html("Internal Error Ocurred. Contact the administrator!")
             $('#form-toast').css({ 'background-color': 'Crimson', 'color': 'white' });
-            $('#form-toast-error').toast('show');
+            $('#toast-sucess-body').html("It is not possible to delete a subject with students. Remove the students first!")
+            $('#delete-modal-subject').modal('hide');
+            $('#form-toast').toast('show');
         })
     };
 
